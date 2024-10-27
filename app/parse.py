@@ -1,6 +1,6 @@
 import csv
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from dataclasses import dataclass
 from typing import List
 
@@ -15,7 +15,7 @@ class Quote:
     tags: List[str]
 
 
-def parse_single_quote(quote_element) -> Quote:
+def parse_single_quote(quote_element: Tag) -> Quote:
     text = quote_element.select_one(".text").get_text()
     author = quote_element.select_one(".author").get_text()
     tags = [tag.get_text() for tag in quote_element.select("a.tag")]
@@ -27,7 +27,12 @@ def parse_quotes_from_page(page_url: str) -> List[Quote]:
     response.raise_for_status()
     soup = BeautifulSoup(response.text, "html.parser")
     quote_elements = soup.find_all("div", class_="quote")
-    return [parse_single_quote(quote_element) for quote_element in quote_elements]
+    return [
+        parse_single_quote(
+            quote_element
+        )
+        for quote_element in quote_elements
+    ]
 
 
 def get_all_quotes() -> List[Quote]:
@@ -49,11 +54,17 @@ def get_all_quotes() -> List[Quote]:
 def main(output_csv_path: str) -> None:
     all_quotes = get_all_quotes()
 
-    with open(output_csv_path, mode="w", newline="", encoding="utf-8") as csvfile:
+    with open(
+            output_csv_path,
+            mode="w",
+            newline="",
+            encoding="utf-8"
+    ) as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(["Text", "Author", "Tags"])
+        writer.writerow(["text", "author", "tags"])
         for quote in all_quotes:
-            writer.writerow([quote.text, quote.author, ", ".join(quote.tags)])
+            formatted_tags = str(quote.tags)
+            writer.writerow([quote.text, quote.author, formatted_tags])
 
 
 if __name__ == "__main__":
