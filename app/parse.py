@@ -2,8 +2,7 @@ import csv
 import requests
 from bs4 import BeautifulSoup, Tag
 from dataclasses import dataclass
-from typing import List
-
+from typing import List, Tuple
 
 BASE_URL = "https://quotes.toscrape.com"
 
@@ -22,31 +21,30 @@ def parse_single_quote(quote_element: Tag) -> Quote:
     return Quote(text=text, author=author, tags=tags)
 
 
-def parse_quotes_from_page(page_url: str) -> List[Quote]:
+def parse_quotes_from_page(page_url: str) -> Tuple[List[Quote], BeautifulSoup]:
     response = requests.get(page_url)
     response.raise_for_status()
     soup = BeautifulSoup(response.text, "html.parser")
     quote_elements = soup.find_all("div", class_="quote")
-    return [
-        parse_single_quote(
+    quotes = [
+        parse_single_quote
+        (
             quote_element
-        )
-        for quote_element in quote_elements
+        ) for quote_element in quote_elements
     ]
+    return quotes, soup
 
 
 def get_all_quotes() -> List[Quote]:
     all_quotes = []
-    page_url = "/page/1"
+    page_url = BASE_URL + "/page/1"
 
     while page_url:
-        quotes = parse_quotes_from_page(BASE_URL + page_url)
+        quotes, soup = parse_quotes_from_page(page_url)
         all_quotes.extend(quotes)
 
-        response = requests.get(BASE_URL + page_url)
-        soup = BeautifulSoup(response.text, "html.parser")
         next_page = soup.select_one("li.next > a")
-        page_url = next_page["href"] if next_page else None
+        page_url = BASE_URL + next_page["href"] if next_page else None
 
     return all_quotes
 
